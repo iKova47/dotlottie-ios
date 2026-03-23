@@ -126,6 +126,18 @@ else
     EXIT_CODE=1
 fi
 
+# Check Cargo registry cache (populated by `make apple-setup` / `cargo fetch`)
+echo -n "Checking Cargo dependency cache... "
+CARGO_REGISTRY="${CARGO_HOME:-$HOME/.cargo}/registry/cache"
+if [ -d "$CARGO_REGISTRY" ] && [ -n "$(ls -A "$CARGO_REGISTRY" 2>/dev/null)" ]; then
+    echo -e "${GREEN}✓${NC} Populated"
+else
+    echo -e "${YELLOW}⚠${NC} Empty or missing"
+    echo "  ⚠️  Cargo dependencies have not been fetched yet"
+    echo "  📦 Run: make apple-setup   (requires network, only needed once)"
+    EXIT_CODE=1
+fi
+
 echo ""
 if [ $EXIT_CODE -eq 0 ]; then
     echo -e "${GREEN}✅ Environment validation passed!${NC}"
@@ -139,6 +151,8 @@ else
     echo "  2. Install nightly: rustup toolchain install nightly"
     echo "  3. Initialize submodules: git submodule update --init --recursive"
     echo "     ⚠️  IMPORTANT: The --recursive flag is required to initialize nested submodules (thorvg)"
+    echo "  4. Fetch Cargo dependencies: make apple-setup"
+    echo "     ⚠️  This requires network access and only needs to be run once"
     echo ""
     echo "For detailed instructions, see CUSTOM_BUILDS.md"
 fi

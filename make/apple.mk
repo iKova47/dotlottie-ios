@@ -134,15 +134,22 @@ TVOS_SIMULATOR_FRAMEWORK_DIR := $(FRAMEWORK_BUILD_DIR)/tvos-simulator
         apple-maccatalyst-arm64 apple-maccatalyst-x86_64 \
         apple-visionos-arm64 apple-visionos-sim-arm64 \
         apple-tvos-arm64 apple-tvos-sim-arm64 \
-        apple-setup apple-clean apple-check-xcode apple-code-sign apple-package apple-frameworks
+        apple-setup apple-clean apple-check-xcode apple-code-sign apple-package apple-frameworks \
+        apple-fetch
+
+# Pre-fetch Cargo dependencies (fast no-op if already cached)
+apple-fetch:
+	@echo "→ Fetching Cargo dependencies..."
+	@cargo fetch --manifest-path $(DOTLOTTIE_RS)/Cargo.toml
+	@echo "✓ Cargo dependencies ready"
 
 # Build for all Apple platforms (software renderer)
-apple: $(addprefix apple-,macos ios maccatalyst visionos tvos) apple-package
+apple: apple-fetch $(addprefix apple-,macos ios maccatalyst visionos tvos) apple-package
 
 # Build for all Apple platforms with WebGPU (WebGPU for macOS/iOS, software for others)
 apple-webgpu: APPLE_FEATURES = $(APPLE_WEBGPU_FEATURES)
 apple-webgpu: APPLE_RELEASE_DIR = $(RELEASE_DIR)/apple-webgpu
-apple-webgpu: $(addprefix apple-,macos ios maccatalyst visionos tvos) apple-package
+apple-webgpu: apple-fetch $(addprefix apple-,macos ios maccatalyst visionos tvos) apple-package
 	@echo "✓ Apple WebGPU build complete (WebGPU on macOS/iOS, software on other platforms)"
 
 # Build for all macOS architectures
@@ -628,6 +635,8 @@ apple-setup:
 		aarch64-apple-ios-macabi \
 		x86_64-apple-ios-macabi >/dev/null
 	@rustup component add rust-src --toolchain nightly
+	@echo "→ Pre-fetching Cargo dependencies (requires network)..."
+	@cargo fetch --manifest-path $(DOTLOTTIE_RS)/Cargo.toml
 	@echo "✓ Apple targets installed"
 
 # Clean all Apple build artifacts
