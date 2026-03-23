@@ -9,3 +9,12 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 /Sources/Thorvg/ios/
+
+# Custom builds (locally built frameworks)
+Sources/DotLottieCore/Custom/
+!Sources/DotLottieCore/Custom/.gitkeep
+CustomBuilds/
+*.xcframework.zip
+
+# Build output from dotlottie-ios Makefile
+/build/
