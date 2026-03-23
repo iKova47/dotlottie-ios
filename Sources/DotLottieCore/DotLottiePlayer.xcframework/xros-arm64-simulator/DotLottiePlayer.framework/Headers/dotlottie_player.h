@@ -30,7 +30,6 @@ typedef enum dotlottieDotLottieResult {
   ManifestNotAvailable = 3,
   AnimationNotLoaded = 4,
   InsufficientCondition = 5,
-  FeatureNotEnabled = 6,
 } dotlottieDotLottieResult;
 
 typedef enum dotlottieMode {
@@ -274,6 +273,8 @@ extern "C" {
 
 struct dotlottieDotLottiePlayer *dotlottie_new_player(uint32_t threads);
 
+struct dotlottieDotLottiePlayer *dotlottie_new_player(uint32_t threads);
+
 enum dotlottieDotLottieResult dotlottie_load_font(const char *name,
                                                   const uint8_t *data,
                                                   uintptr_t size);
@@ -315,8 +316,6 @@ enum dotlottieDotLottieResult dotlottie_load_dotlottie_data(struct dotlottieDotL
  * - `DotLottieResult::Success` on success
  * - `DotLottieResult::ManifestNotAvailable` if no manifest is available
  * - `DotLottieResult::InvalidParameter` if ptr is invalid
- * - `DotLottieResult::FeatureNotEnabled` if built without the `dotlottie` feature
- * - `DotLottieResult::Error` if the manifest cannot be serialized to JSON
  */
 enum dotlottieDotLottieResult dotlottie_manifest(struct dotlottieDotLottiePlayer *ptr,
                                                  char *buffer,
@@ -629,7 +628,6 @@ enum dotlottieDotLottieResult dotlottie_reset_theme(struct dotlottieDotLottiePla
  *
  * # Returns
  * - `DotLottieResult::Success` on success
- * - `DotLottieResult::FeatureNotEnabled` if built without the `theming` feature
  * - `DotLottieResult::InvalidParameter` if the data is invalid or pointer is invalid
  */
 enum dotlottieDotLottieResult dotlottie_set_theme_data(struct dotlottieDotLottiePlayer *ptr,
@@ -717,73 +715,6 @@ enum dotlottieDotLottieResult dotlottie_set_image_slot_data_url(struct dotlottie
                                                                 const char *data_url);
 
 /**
- * Returns the number of slot IDs in the current animation.
- */
-enum dotlottieDotLottieResult dotlottie_get_slot_ids_count(struct dotlottieDotLottiePlayer *ptr,
-                                                           uint32_t *count);
-
-/**
- * Returns a slot ID by index.
- *
- * Call `dotlottie_get_slot_ids_count` first to know how many IDs exist.
- * Pass `buffer = NULL` to query the required size via `size_out`.
- */
-enum dotlottieDotLottieResult dotlottie_get_slot_id(struct dotlottieDotLottiePlayer *ptr,
-                                                    uint32_t index,
-                                                    char *buffer,
-                                                    uintptr_t *size_out);
-
-/**
- * Returns the type name of a slot (e.g., "color", "scalar", "text").
- *
- * Pass `buffer = NULL` to query the required size via `size_out`.
- */
-enum dotlottieDotLottieResult dotlottie_get_slot_type(struct dotlottieDotLottiePlayer *ptr,
-                                                      const char *slot_id,
-                                                      char *buffer,
-                                                      uintptr_t *size_out);
-
-/**
- * Returns a slot value as a JSON string.
- *
- * Pass `buffer = NULL` to query the required size via `size_out`.
- */
-enum dotlottieDotLottieResult dotlottie_get_slot_str(struct dotlottieDotLottiePlayer *ptr,
-                                                     const char *slot_id,
-                                                     char *buffer,
-                                                     uintptr_t *size_out);
-
-/**
- * Returns all slots as a JSON string.
- *
- * Pass `buffer = NULL` to query the required size via `size_out`.
- */
-enum dotlottieDotLottieResult dotlottie_get_slots_str(struct dotlottieDotLottiePlayer *ptr,
-                                                      char *buffer,
-                                                      uintptr_t *size_out);
-
-/**
- * Set a slot value from a JSON string.
- *
- * The slot must already exist (i.e., its ID must be in the current slot values).
- * The JSON should match the format for the slot's type.
- */
-enum dotlottieDotLottieResult dotlottie_set_slot_str(struct dotlottieDotLottiePlayer *ptr,
-                                                     const char *slot_id,
-                                                     const char *json);
-
-/**
- * Reset a single slot to its default value (from the animation).
- */
-enum dotlottieDotLottieResult dotlottie_reset_slot(struct dotlottieDotLottiePlayer *ptr,
-                                                   const char *slot_id);
-
-/**
- * Reset all slots to their default values (from the animation).
- */
-enum dotlottieDotLottieResult dotlottie_reset_slots(struct dotlottieDotLottiePlayer *ptr);
-
-/**
  * Gets the number of markers in the current animation.
  *
  * # Parameters
@@ -827,7 +758,6 @@ enum dotlottieDotLottieResult dotlottie_marker(struct dotlottieDotLottiePlayer *
  *
  * # Returns
  * - `DotLottieResult::Success` on success
- * - `DotLottieResult::FeatureNotEnabled` if built without the `dotlottie` feature
  * - `DotLottieResult::InvalidParameter` if no animation is active or player pointer is invalid
  */
 enum dotlottieDotLottieResult dotlottie_animation_id(struct dotlottieDotLottiePlayer *ptr,
@@ -844,7 +774,6 @@ enum dotlottieDotLottieResult dotlottie_animation_id(struct dotlottieDotLottiePl
  *
  * # Returns
  * - `DotLottieResult::Success` on success
- * - `DotLottieResult::FeatureNotEnabled` if built without the `theming` feature
  * - `DotLottieResult::InvalidParameter` if no theme is active or player pointer is invalid
  */
 enum dotlottieDotLottieResult dotlottie_theme_id(struct dotlottieDotLottiePlayer *ptr,
@@ -904,16 +833,16 @@ int32_t dotlottie_poll_event(struct dotlottieDotLottiePlayer *player,
  * - Returned state machine must be destroyed with dotlottie_state_machine_release()
  *   BEFORE destroying the runtime
  */
-struct dotlottieDotLottieStateMachine *dotlottie_state_machine_load(struct dotlottieDotLottiePlayer *runtime,
-                                                                    const char *state_machine_id);
+struct dotlottieStateMachineEngine *dotlottie_state_machine_load(struct dotlottieDotLottiePlayer *runtime,
+                                                                 const char *state_machine_id);
 
 /**
  * Load a state machine from a JSON definition string
  *
  * Returns a pointer to the StateMachineEngine or NULL on error.
  */
-struct dotlottieDotLottieStateMachine *dotlottie_state_machine_load_data(struct dotlottieDotLottiePlayer *runtime,
-                                                                         const char *state_machine_definition);
+struct dotlottieStateMachineEngine *dotlottie_state_machine_load_data(struct dotlottieDotLottiePlayer *runtime,
+                                                                      const char *state_machine_definition);
 
 /**
  * Start the state machine with the specified URL policy.
@@ -925,9 +854,8 @@ struct dotlottieDotLottieStateMachine *dotlottie_state_machine_load_data(struct 
  *
  * # Returns
  * DotLottieResult::Success if started, error variant if failed
- * - `DotLottieResult::FeatureNotEnabled` if built without the `state-machines` feature
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_start(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_start(struct dotlottieStateMachineEngine *sm,
                                                             const char *whitelist,
                                                             bool require_user_interaction);
 
@@ -937,7 +865,7 @@ enum dotlottieDotLottieResult dotlottie_state_machine_start(struct dotlottieDotL
  * Call dotlottie_state_machine_release() to actually destroy the state machine
  * and release the runtime borrow.
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_stop(struct dotlottieDotLottieStateMachine *sm);
+enum dotlottieDotLottieResult dotlottie_state_machine_stop(struct dotlottieStateMachineEngine *sm);
 
 /**
  * Destroy the state machine and release the runtime borrow
@@ -949,77 +877,77 @@ enum dotlottieDotLottieResult dotlottie_state_machine_stop(struct dotlottieDotLo
  * - State machine pointer must be valid
  * - Must not use state machine pointer after this call
  */
-void dotlottie_state_machine_release(struct dotlottieDotLottieStateMachine *sm);
+void dotlottie_state_machine_release(struct dotlottieStateMachineEngine *sm);
 
 /**
  * Tick the state machine (advances animation and processes state logic)
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_tick(struct dotlottieDotLottieStateMachine *sm);
+enum dotlottieDotLottieResult dotlottie_state_machine_tick(struct dotlottieStateMachineEngine *sm);
 
 /**
  * Post a pointer/click event to the state machine
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_post_event(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_post_event(struct dotlottieStateMachineEngine *sm,
                                                                  const struct dotlottieDotLottieEvent *event);
 
 /**
  * Helper functions for posting specific event types
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_post_click(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_post_click(struct dotlottieStateMachineEngine *sm,
                                                                  float x,
                                                                  float y);
 
-enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_down(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_down(struct dotlottieStateMachineEngine *sm,
                                                                         float x,
                                                                         float y);
 
-enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_up(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_up(struct dotlottieStateMachineEngine *sm,
                                                                       float x,
                                                                       float y);
 
-enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_move(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_move(struct dotlottieStateMachineEngine *sm,
                                                                         float x,
                                                                         float y);
 
-enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_enter(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_enter(struct dotlottieStateMachineEngine *sm,
                                                                          float x,
                                                                          float y);
 
-enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_exit(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_post_pointer_exit(struct dotlottieStateMachineEngine *sm,
                                                                         float x,
                                                                         float y);
 
 /**
  * Fire a named event input
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_fire_event(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_fire_event(struct dotlottieStateMachineEngine *sm,
                                                                  const char *event_name);
 
 /**
  * Set a numeric input
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_set_numeric_input(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_set_numeric_input(struct dotlottieStateMachineEngine *sm,
                                                                         const char *key,
                                                                         float value);
 
 /**
  * Set a string input
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_set_string_input(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_set_string_input(struct dotlottieStateMachineEngine *sm,
                                                                        const char *key,
                                                                        const char *value);
 
 /**
  * Set a boolean input
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_set_boolean_input(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_set_boolean_input(struct dotlottieStateMachineEngine *sm,
                                                                         const char *key,
                                                                         bool value);
 
 /**
  * Get a numeric input value
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_get_numeric_input(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_get_numeric_input(struct dotlottieStateMachineEngine *sm,
                                                                         const char *key,
                                                                         float *result);
 
@@ -1034,10 +962,9 @@ enum dotlottieDotLottieResult dotlottie_state_machine_get_numeric_input(struct d
  *
  * # Returns
  * - `DotLottieResult::Success` on success
- * - `DotLottieResult::FeatureNotEnabled` if built without the `state-machines` feature
  * - `DotLottieResult::InvalidParameter` if the input doesn't exist or pointers are invalid
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_get_string_input(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_get_string_input(struct dotlottieStateMachineEngine *sm,
                                                                        const char *key,
                                                                        char *buffer,
                                                                        uintptr_t *size_out);
@@ -1045,7 +972,7 @@ enum dotlottieDotLottieResult dotlottie_state_machine_get_string_input(struct do
 /**
  * Get a boolean input value
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_get_boolean_input(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_get_boolean_input(struct dotlottieStateMachineEngine *sm,
                                                                         const char *key,
                                                                         bool *result);
 
@@ -1059,10 +986,9 @@ enum dotlottieDotLottieResult dotlottie_state_machine_get_boolean_input(struct d
  *
  * # Returns
  * - `DotLottieResult::Success` on success
- * - `DotLottieResult::FeatureNotEnabled` if built without the `state-machines` feature
  * - `DotLottieResult::InvalidParameter` if pointer is invalid
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_current_state(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_current_state(struct dotlottieStateMachineEngine *sm,
                                                                     char *buffer,
                                                                     uintptr_t *size_out);
 
@@ -1076,10 +1002,9 @@ enum dotlottieDotLottieResult dotlottie_state_machine_current_state(struct dotlo
  *
  * # Returns
  * - `DotLottieResult::Success` on success
- * - `DotLottieResult::FeatureNotEnabled` if built without the `state-machines` feature
  * - `DotLottieResult::InvalidParameter` if pointer is invalid
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_status(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_status(struct dotlottieStateMachineEngine *sm,
                                                              char *buffer,
                                                              uintptr_t *size_out);
 
@@ -1089,7 +1014,7 @@ enum dotlottieDotLottieResult dotlottie_state_machine_status(struct dotlottieDot
  * Returns bit flags indicating which interaction types are needed.
  * Frameworks should register listeners for the returned interaction types.
  */
-enum dotlottieDotLottieResult dotlottie_state_machine_framework_setup(struct dotlottieDotLottieStateMachine *sm,
+enum dotlottieDotLottieResult dotlottie_state_machine_framework_setup(struct dotlottieStateMachineEngine *sm,
                                                                       uint16_t *result);
 
 /**
@@ -1116,7 +1041,7 @@ enum dotlottieDotLottieResult dotlottie_state_machine_framework_setup(struct dot
  * }
  * ```
  */
-int32_t dotlottie_state_machine_poll_event(struct dotlottieDotLottieStateMachine *sm,
+int32_t dotlottie_state_machine_poll_event(struct dotlottieStateMachineEngine *sm,
                                            struct dotlottieStateMachineEvent *event);
 
 /**
@@ -1125,7 +1050,7 @@ int32_t dotlottie_state_machine_poll_event(struct dotlottieDotLottieStateMachine
  * Returns 1 if an event was retrieved, 0 if no events are available, or -1 on error.
  * The message pointer is valid until the next poll call.
  */
-int32_t dotlottie_state_machine_poll_internal_event(struct dotlottieDotLottieStateMachine *sm,
+int32_t dotlottie_state_machine_poll_internal_event(struct dotlottieStateMachineEngine *sm,
                                                     struct dotlottieStateMachineInternalEvent *event);
 
 /**
@@ -1139,7 +1064,6 @@ int32_t dotlottie_state_machine_poll_internal_event(struct dotlottieDotLottieSta
  *
  * # Returns
  * - `DotLottieResult::Success` on success
- * - `DotLottieResult::FeatureNotEnabled` if built without the `state-machines` feature
  * - `DotLottieResult::InvalidParameter` if state machine not found or pointers are invalid
  */
 enum dotlottieDotLottieResult dotlottie_get_state_machine(struct dotlottieDotLottiePlayer *runtime,
@@ -1202,6 +1126,124 @@ void dotlottie_free_wgpu_context(void *context);
  * context must be a valid pointer from dotlottie_create_wgpu_context_from_metal_layer
  */
 void dotlottie_wgpu_context_present(const void *context);
+
+/**
+ * Create a WebGL context for a canvas selector
+ *
+ * # Arguments
+ * * `selector` - CSS selector for the canvas element (e.g., "#myCanvas")
+ *
+ * # Returns
+ * A handle (uintptr_t) to the WebGL context, or 0 on failure
+ */
+uintptr_t dotlottie_webgl_context_create(const char *selector);
+
+/**
+ * Make a WebGL context current
+ *
+ * # Returns
+ * 0 on success, non-zero on failure
+ */
+int32_t dotlottie_webgl_context_make_current(uintptr_t context);
+
+/**
+ * Check if a WebGL context is lost
+ *
+ * # Returns
+ * 1 if context is lost, 0 otherwise
+ */
+int32_t dotlottie_webgl_is_context_lost(uintptr_t context);
+
+/**
+ * Destroy a WebGL context
+ */
+void dotlottie_webgl_context_destroy(uintptr_t context);
+
+extern uintptr_t emscripten_webgpu_get_device(void);
+
+extern uintptr_t wgpuCreateInstance(const void *descriptor);
+
+extern uintptr_t wgpuInstanceCreateSurface(uintptr_t instance, const void *descriptor);
+
+extern void wgpuInstanceRelease(uintptr_t instance);
+
+extern void wgpuAdapterRelease(uintptr_t adapter);
+
+extern void wgpuDeviceRelease(uintptr_t device);
+
+extern void wgpuSurfaceRelease(uintptr_t surface);
+
+/**
+ * Get the WebGPU adapter handle
+ *
+ * # Returns
+ * Handle to the adapter, or 0 if not available
+ */
+uintptr_t dotlottie_webgpu_get_adapter(void);
+
+/**
+ * Get the WebGPU device handle
+ *
+ * # Returns
+ * Handle to the device, or fallback to emscripten's device
+ */
+uintptr_t dotlottie_webgpu_get_device(void);
+
+/**
+ * Get the WebGPU instance handle
+ *
+ * # Returns
+ * Handle to the instance
+ */
+uintptr_t dotlottie_webgpu_get_instance(void);
+
+/**
+ * Create a WebGPU surface for a canvas
+ *
+ * # Arguments
+ * * `canvas_selector` - CSS selector for the canvas element (e.g., "#canvas")
+ *
+ * # Returns
+ * Handle to the surface (0 on failure)
+ */
+uintptr_t dotlottie_webgpu_get_surface(const char *canvas_selector);
+
+/**
+ * Clean up WebGPU resources
+ */
+void dotlottie_webgpu_cleanup(void);
+
+/**
+ * Release a WebGPU instance
+ *
+ * # Arguments
+ * * `instance` - Handle to the instance to release
+ */
+void dotlottie_wgpu_instance_release(uintptr_t instance);
+
+/**
+ * Release a WebGPU adapter
+ *
+ * # Arguments
+ * * `adapter` - Handle to the adapter to release
+ */
+void dotlottie_wgpu_adapter_release(uintptr_t adapter);
+
+/**
+ * Release a WebGPU device
+ *
+ * # Arguments
+ * * `device` - Handle to the device to release
+ */
+void dotlottie_wgpu_device_release(uintptr_t device);
+
+/**
+ * Release a WebGPU surface
+ *
+ * # Arguments
+ * * `surface` - Handle to the surface to release
+ */
+void dotlottie_wgpu_surface_release(uintptr_t surface);
 
 #ifdef __cplusplus
 }  // extern "C"
