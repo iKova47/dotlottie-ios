@@ -29,6 +29,25 @@ let package = Package(
         .binaryTarget(
             name: "DotLottiePlayer",
             path: "./Sources/DotLottieCore/DotLottiePlayer.xcframework"
+            // Use custom build
+            //            path: "./Sources/DotLottieCore/Custom/DotLottiePlayer.xcframework"
         ),
+        
+        // Custom Framework Builder Plugin
+        .plugin(
+            name: "BuildCustomFramework",
+            capability: .command(
+                intent: .custom(
+                    verb: "build-custom-framework",
+                    description: "Build DotLottiePlayer XCFramework with custom features"
+                ),
+                permissions: [
+                    .writeToPackageDirectory(
+                        reason: "Write custom-built XCFramework to Sources/DotLottieCore/Custom/"
+                    )
+                ]
+            ),
+            path: "Plugins/BuildCustomFramework"
+        )
     ]
 )
