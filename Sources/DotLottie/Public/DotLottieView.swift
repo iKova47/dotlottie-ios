@@ -6,6 +6,7 @@
 //
 //
 
+#if !os(watchOS)
 import Metal
 import MetalKit
 import CoreImage
@@ -99,3 +100,112 @@ public struct DotLottieView: ViewRepresentable, DotLottie {
         self.dotLottieViewModel.subscribe(observer: observer)
     }
 }
+
+#else // os(watchOS)
+
+import SwiftUI
+import CoreGraphics
+
+public struct DotLottieView: View, DotLottie {
+    @ObservedObject public var dotLottieViewModel: DotLottieAnimation
+    @ObservedObject internal var playerState: Player
+    @State private var currentImage: CGImage?
+    @State private var viewSize: CGSize = .zero
+    @State private var isDragging: Bool = false
+    @Environment(\.displayScale) private var displayScale: CGFloat
+
+    public init(dotLottie: DotLottieAnimation) {
+        self.dotLottieViewModel = dotLottie
+        self.playerState = dotLottie.player
+    }
+
+    /// Resize the animation buffer to physical pixels and record the point-based view size.
+    private func updateViewSize(_ size: CGSize) {
+        viewSize = size
+        let physW = Int(size.width * displayScale)
+        let physH = Int(size.height * displayScale)
+        if physW > 0 && physH > 0 {
+            dotLottieViewModel.resize(width: physW, height: physH)
+        }
+    }
+
+    /// Map a SwiftUI touch location (points) to animation buffer coordinates (physical pixels).
+    /// After updateViewSize(), animationModel.width == viewSize.width * displayScale, so
+    /// the ratio equals displayScale — identical to how the iOS Coordinator maps coordinates.
+    private func mapCoordinates(location: CGPoint) -> CGPoint {
+        let animWidth = CGFloat(dotLottieViewModel.animationModel.width)
+        let animHeight = CGFloat(dotLottieViewModel.animationModel.height)
+        guard viewSize.width > 0, viewSize.height > 0, animWidth > 0, animHeight > 0 else {
+            return location
+        }
+        return CGPoint(
+            x: location.x * (animWidth / viewSize.width),
+            y: location.y * (animHeight / viewSize.height)
+        )
+    }
+
+    public var body: some View {
+        GeometryReader { geometry in
+            Group {
+                if let image = currentImage {
+                    Image(decorative: image, scale: displayScale)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                } else {
+                    Color.clear
+                }
+            }
+            .onAppear {
+                updateViewSize(geometry.size)
+                if let frame = dotLottieViewModel.tick() {
+                    currentImage = frame
+                }
+            }
+            .onChange(of: geometry.size) { newSize in
+                updateViewSize(newSize)
+            }
+        }
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    if !isDragging {
+                        isDragging = true
+                        let mapped = mapCoordinates(location: value.startLocation)
+                        dotLottieViewModel.stateMachinePostEvent(.pointerDown(x: Float(mapped.x), y: Float(mapped.y)))
+                    }
+                    let mapped = mapCoordinates(location: value.location)
+                    dotLottieViewModel.stateMachinePostEvent(.pointerMove(x: Float(mapped.x), y: Float(mapped.y)))
+                }
+                .onEnded { value in
+                    isDragging = false
+                    let mapped = mapCoordinates(location: value.location)
+                    dotLottieViewModel.stateMachinePostEvent(.pointerUp(x: Float(mapped.x), y: Float(mapped.y)))
+                    // Fire click if touch didn't move significantly (< 10pt radius)
+                    let dx = value.location.x - value.startLocation.x
+                    let dy = value.location.y - value.startLocation.y
+                    if (dx * dx + dy * dy) < 100 {
+                        let mappedStart = mapCoordinates(location: value.startLocation)
+                        dotLottieViewModel.stateMachinePostEvent(.click(x: Float(mappedStart.x), y: Float(mappedStart.y)))
+                    }
+                }
+        )
+        .onReceive(
+            Timer.publish(
+                every: 1.0 / Double(max(1, dotLottieViewModel.framerate)),
+                on: .main,
+                in: .common
+            ).autoconnect()
+        ) { _ in
+            if let frame = dotLottieViewModel.tick() {
+                currentImage = frame
+            }
+        }
+    }
+
+    public func subscribe(observer: Observer) {
+        dotLottieViewModel.subscribe(observer: observer)
+    }
+}
+
+#endif // !os(watchOS)
