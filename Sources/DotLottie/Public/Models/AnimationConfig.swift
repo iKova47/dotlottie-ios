@@ -36,7 +36,7 @@ public struct AnimationConfig {
         loopCount: Int? = 0,
         mode: Mode? = .forward,
         speed: Float? = 1,
-        useFrameInterpolation: Bool? = true,
+        useFrameInterpolation: Bool? = false,
         segments: (Float, Float)? = nil,
         backgroundColor: CIImage? = .clear,
         width: Int? = nil,

@@ -241,9 +241,6 @@ public class Coordinator: NSObject, MTKViewDelegate {
         let animationWidth = CGFloat(self.parent.dotLottieViewModel.animationModel.width)
         let animationHeight = CGFloat(self.parent.dotLottieViewModel.animationModel.height)
 
-        // Native size reported by the library after loading
-        let nativeSize = self.parent.dotLottieViewModel.player.animationSize()
-
         // Calculate scale ratio: animation pixels / view points
         // Note: viewSize is in points, animation dimensions are in pixels
         let scaleRatio = CGPoint(

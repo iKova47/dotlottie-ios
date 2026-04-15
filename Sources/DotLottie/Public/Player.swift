@@ -255,14 +255,8 @@ class Player: ObservableObject {
         self.WIDTH = UInt32(width)
         self.HEIGHT = UInt32(height)
         
-        do {
-            try allocateRenderBuffer(clearFirst: true)
-        } catch {
-            hasResized = false
-        }
-        
+        try allocateRenderBuffer(clearFirst: true)
         hasResized = true
-        
     }
     
     public func stateMachineLoad(id: String) -> Bool {
