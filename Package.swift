@@ -11,6 +11,9 @@ let package = Package(
         .library(
             name: "DotLottie",
             targets: ["DotLottie", "DotLottiePlayer"]),
+        .library(
+            name: "DotLottiePlayer",
+            targets: ["DotLottiePlayer"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
