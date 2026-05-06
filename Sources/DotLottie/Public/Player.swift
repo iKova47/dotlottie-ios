@@ -85,12 +85,7 @@ class Player: ObservableObject {
         dotLottiePlayer.render()
     }
 
-    private func allocateRenderBuffer(clearFirst: Bool = false) throws {
-        // Ensure canvas is not rendering before deallocating buffer
-        if clearFirst && dotLottiePlayer.isLoaded() {
-            dotLottiePlayer.clear()
-        }
-
+    private func allocateRenderBuffer() throws {
         // Clean up existing buffer
         deallocateRenderBuffer()
 
@@ -124,12 +119,12 @@ class Player: ObservableObject {
         }
     }
 
-    public func tick() -> CGImage? {
+    public func tick(dt: Float) -> CGImage? {
         if !self.isLoaded() {
             return nil
         }
 
-        let tick = dotLottiePlayer.tick()
+        let tick = dotLottiePlayer.tick(dt: dt)
 
         // Software mode: create CGImage from buffer
         if tick || !hasRenderedFirstFrame || currFrame != dotLottiePlayer.currentFrame() || hasResized {
@@ -254,8 +249,8 @@ class Player: ObservableObject {
     public func resize(width: Int, height: Int) throws {
         self.WIDTH = UInt32(width)
         self.HEIGHT = UInt32(height)
-        
-        try allocateRenderBuffer(clearFirst: true)
+
+        try allocateRenderBuffer()
         hasResized = true
     }
     
@@ -303,20 +298,12 @@ class Player: ObservableObject {
         dotLottiePlayer.stateMachineFrameworkSetup()
     }
     
-    public func getLayerBounds(layerName: String) -> [Float] {
-        dotLottiePlayer.getLayerBounds(layerName: layerName)
-    }
-    
     public func stateMachineCurrentState() -> String {
         dotLottiePlayer.stateMachineCurrentState()
     }
     
     public func duration() -> Float32 {
         return dotLottiePlayer.duration()
-    }
-    
-    public func clear() {
-        dotLottiePlayer.clear()
     }
     
     @discardableResult

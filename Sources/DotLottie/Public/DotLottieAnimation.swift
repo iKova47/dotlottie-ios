@@ -213,19 +213,15 @@ public final class DotLottieAnimation: ObservableObject {
     }
     
     // MARK: Tick
-    
-    /// Requests a frame and renders it if necessary
-    public func tick() -> CGImage? {
-        if let image = player.tick() {
-            return image
-        }
-        
-        return nil
+
+    /// Advances the animation by `dt` seconds and renders if the frame changed.
+    public func tick(dt: Float) -> CGImage? {
+        player.tick(dt: dt)
     }
-    
-    /// Generates frame image
+
+    /// Renders the current frame without advancing time.
     public func frameImage() -> CGImage? {
-        player.tick()
+        player.tick(dt: 0)
     }
     
     // MARK: Loaders
@@ -483,10 +479,6 @@ public final class DotLottieAnimation: ObservableObject {
     
     public func segments() -> (Float, Float) {
         return (player.config().segment[0], player.config().segment[1])
-    }
-    
-    public func getLayerBounds(layerName: String) -> [Float] {
-        player.getLayerBounds(layerName: layerName)
     }
     
     /// Set the current frame.

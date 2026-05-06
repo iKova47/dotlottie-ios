@@ -291,8 +291,8 @@ public enum Event {
     case onComplete
     case onLoopComplete
 
-    internal func toCEvent() -> dotlottieDotLottieEvent {
-        var event = dotlottieDotLottieEvent()
+    internal func toCEvent() -> dotlottiePlayerEvent {
+        var event = dotlottiePlayerEvent()
 
         switch self {
         case .pointerDown(let x, let y):
@@ -483,9 +483,11 @@ public class DotLottiePlayer {
         return dotlottie_stop(ptr) == Success
     }
 
-    public func tick() -> Bool {
+    public func tick(dt: Float) -> Bool {
         guard let ptr = playerPtr else { return false }
-        return dotlottie_tick(ptr) == Success
+        var rendered: Bool = false
+        dotlottie_tick(ptr, dt, &rendered)
+        return rendered
     }
 
     public func render() -> Bool {
@@ -497,26 +499,13 @@ public class DotLottiePlayer {
         guard let ptr = playerPtr else { return false }
         return dotlottie_set_frame(ptr, no) == Success
     }
-    
+
     public func animationSize() -> CGSize {
-        guard let ptr = playerPtr else { return CGSize(width: 0, height: 0)}
-        var resultW: Float = 0
-        var resultH: Float = 0
-        
-        dotlottie_animation_size(ptr, &resultW, &resultH);
-        return CGSize(width: Double(resultW), height: Double(resultH))
-    }
-
-    public func seek(frame: Float) -> Bool {
-        guard let ptr = playerPtr else { return false }
-        return dotlottie_seek(ptr, frame) == Success
-    }
-
-    public func requestFrame() -> Float? {
-        guard let ptr = playerPtr else { return nil }
-        var result: Float = 0
-        guard dotlottie_request_frame(ptr, &result) == Success else { return nil }
-        return result
+        guard let ptr = playerPtr else { return CGSize(width: 0, height: 0) }
+        var w: Float = 0
+        var h: Float = 0
+        dotlottie_get_animation_size(ptr, &w, &h)
+        return CGSize(width: Double(w), height: Double(h))
     }
 
     // MARK: - State
@@ -533,7 +522,7 @@ public class DotLottiePlayer {
 
     public func playbackStatus() -> PlaybackStatus {
         guard let ptr = playerPtr else { return .stopped }
-        return PlaybackStatus(cStatus: dotlottie_playback_status(ptr))
+        return PlaybackStatus(cStatus: dotlottie_get_playback_status(ptr))
     }
 
     public func isPlaying() -> Bool { playbackStatus() == .playing }
@@ -545,21 +534,21 @@ public class DotLottiePlayer {
     public func totalFrames() -> Float {
         guard let ptr = playerPtr else { return 0 }
         var result: Float = 0
-        dotlottie_total_frames(ptr, &result)
+        dotlottie_get_total_frames(ptr, &result)
         return result
     }
 
     public func currentFrame() -> Float {
         guard let ptr = playerPtr else { return 0 }
         var result: Float = 0
-        dotlottie_current_frame(ptr, &result)
+        dotlottie_get_current_frame(ptr, &result)
         return result
     }
 
     public func duration() -> Float {
         guard let ptr = playerPtr else { return 0 }
         var result: Float = 0
-        dotlottie_duration(ptr, &result)
+        dotlottie_get_duration(ptr, &result)
         return result
     }
 
@@ -567,16 +556,8 @@ public class DotLottiePlayer {
     public func currentLoopCount() -> UInt32 {
         guard let ptr = playerPtr else { return 0 }
         var result: UInt32 = 0
-        dotlottie_current_loop_count(ptr, &result)
+        dotlottie_get_current_loop_count(ptr, &result)
         return result
-    }
-
-    public func animationSize() -> (width: Float, height: Float) {
-        guard let ptr = playerPtr else { return (0, 0) }
-        var w: Float = 0
-        var h: Float = 0
-        dotlottie_animation_size(ptr, &w, &h)
-        return (w, h)
     }
 
     // MARK: - Configuration Getters
@@ -615,7 +596,7 @@ public class DotLottiePlayer {
     public func getBackgroundColor() -> UInt32 {
         guard let ptr = playerPtr else { return 0 }
         var r: UInt8 = 0, g: UInt8 = 0, b: UInt8 = 0, a: UInt8 = 0
-        dotlottie_background(ptr, &r, &g, &b, &a)
+        dotlottie_get_background(ptr, &r, &g, &b, &a)
         return (UInt32(a) << 24) | (UInt32(r) << 16) | (UInt32(g) << 8) | UInt32(b)
     }
 
@@ -725,11 +706,6 @@ public class DotLottiePlayer {
         applyConfig(config)
     }
 
-    public func clear() {
-        guard let ptr = playerPtr else { return }
-        dotlottie_clear(ptr)
-    }
-
     // MARK: - Renderer Targets
 
     public func setSoftwareTarget(
@@ -794,7 +770,7 @@ public class DotLottiePlayer {
     /// Returns the manifest parsed from JSON, or nil if no manifest is available.
     public func manifest() -> Manifest? {
         guard let ptr = playerPtr else { return nil }
-        guard let jsonString = stringFromBufferAPI({ dotlottie_manifest(ptr, $0, $1) }) else { return nil }
+        guard let jsonString = stringFromBufferAPI({ dotlottie_get_manifest(ptr, $0, $1) }) else { return nil }
         return parseManifestJSON(jsonString)
     }
 
@@ -860,14 +836,14 @@ public class DotLottiePlayer {
     public func markers() -> [Marker] {
         guard let ptr = playerPtr else { return [] }
         var count: UInt32 = 0
-        guard dotlottie_markers_count(ptr, &count) == Success, count > 0 else { return [] }
+        guard dotlottie_get_markers_count(ptr, &count) == Success, count > 0 else { return [] }
 
         var result: [Marker] = []
         for i in 0..<count {
             var namePtr: UnsafePointer<CChar>? = nil
             var time: Float = 0
             var duration: Float = 0
-            if dotlottie_marker(ptr, i, &namePtr, &time, &duration) == Success, let namePtr = namePtr {
+            if dotlottie_get_marker(ptr, i, &namePtr, &time, &duration) == Success, let namePtr = namePtr {
                 result.append(Marker(name: String(cString: namePtr), time: time, duration: duration))
             }
         }
@@ -896,12 +872,12 @@ public class DotLottiePlayer {
 
     public func activeThemeId() -> String {
         guard let ptr = playerPtr else { return "" }
-        return stringFromBufferAPI({ dotlottie_theme_id(ptr, $0, $1) }) ?? ""
+        return stringFromBufferAPI({ dotlottie_get_theme_id(ptr, $0, $1) }) ?? ""
     }
 
     public func activeAnimationId() -> String {
         guard let ptr = playerPtr else { return "" }
-        return stringFromBufferAPI({ dotlottie_animation_id(ptr, $0, $1) }) ?? ""
+        return stringFromBufferAPI({ dotlottie_get_animation_id(ptr, $0, $1) }) ?? ""
     }
 
     // MARK: - Slots
@@ -970,15 +946,6 @@ public class DotLottiePlayer {
         return slotId.withCString { idPtr in
             dataUrl.withCString { dotlottie_set_image_slot_data_url(ptr, idPtr, $0) == Success }
         }
-    }
-
-    // MARK: - Layer Bounds
-
-    public func getLayerBounds(layerName: String) -> [Float] {
-        guard let ptr = playerPtr else { return [] }
-        var bounds = dotlottieLayerBoundingBox()
-        _ = layerName.withCString { dotlottie_get_layer_bounds(ptr, $0, &bounds) }
-        return [bounds.x1, bounds.y1, bounds.x2, bounds.y2, bounds.x3, bounds.y3, bounds.x4, bounds.y4]
     }
 
     // MARK: - State Machine
@@ -1112,19 +1079,19 @@ public class DotLottiePlayer {
 
     public func stateMachineCurrentState() -> String {
         guard let smPtr = stateMachinePtr else { return "" }
-        return stringFromBufferAPI({ dotlottie_state_machine_current_state(smPtr, $0, $1) }) ?? ""
+        return stringFromBufferAPI({ dotlottie_state_machine_get_current_state(smPtr, $0, $1) }) ?? ""
     }
 
     public func stateMachineStatus() -> String {
         guard let smPtr = stateMachinePtr else { return "" }
-        return stringFromBufferAPI({ dotlottie_state_machine_status(smPtr, $0, $1) }) ?? ""
+        return stringFromBufferAPI({ dotlottie_state_machine_get_status(smPtr, $0, $1) }) ?? ""
     }
 
     /// Returns raw bit flags indicating which interaction types are needed.
     public func stateMachineFrameworkSetup() -> UInt16 {
         guard let smPtr = stateMachinePtr else { return 0 }
         var result: UInt16 = 0
-        dotlottie_state_machine_framework_setup(smPtr, &result)
+        dotlottie_state_machine_get_framework_setup(smPtr, &result)
         return result
     }
 
