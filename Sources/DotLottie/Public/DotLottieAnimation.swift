@@ -253,9 +253,7 @@ public final class DotLottieAnimation: ObservableObject {
             try player.loadDotlottieData(data: data, width: self.animationModel.width, height: self.animationModel.height)
             
             if config.stateMachineId != "" {
-                let _ = player.stateMachineInternalSubscribe(observer: self.internalStateMachineObserver)
-                
-                self.stateMachineListeners = stateMachineFrameworkSetup().map { $0.lowercased() }
+                _ = stateMachineStart(id: config.stateMachineId)
             }
         } catch let error {
             animationModel.error = true
