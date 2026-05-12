@@ -365,6 +365,7 @@ private func stringFromBufferAPI(
 public class DotLottiePlayer {
     private var playerPtr: OpaquePointer?
     private var stateMachinePtr: OpaquePointer?
+    public private(set) var isStateMachineRunning: Bool = false
 
     private var observers: [Observer] = []
     private var stateMachineObservers: [StateMachineObserver] = []
@@ -484,9 +485,12 @@ public class DotLottiePlayer {
     }
 
     public func tick(dt: Float) -> Bool {
-        guard let ptr = playerPtr else { return false }
         var rendered: Bool = false
-        dotlottie_tick(ptr, dt, &rendered)
+        if isStateMachineRunning, let smPtr = stateMachinePtr {
+            dotlottie_state_machine_tick(smPtr, dt, &rendered)
+        } else if let ptr = playerPtr {
+            dotlottie_tick(ptr, dt, &rendered)
+        }
         return rendered
     }
 
@@ -976,14 +980,19 @@ public class DotLottiePlayer {
     public func stateMachineStart(openUrlPolicy: OpenUrlPolicy = OpenUrlPolicy()) -> Bool {
         guard let smPtr = stateMachinePtr else { return false }
         let whitelistStr = openUrlPolicy.whitelist.joined(separator: ",")
+        let result: Bool
         if whitelistStr.isEmpty {
-            return dotlottie_state_machine_start(smPtr, nil, openUrlPolicy.requireUserInteraction) == Success
+            result = dotlottie_state_machine_start(smPtr, nil, openUrlPolicy.requireUserInteraction) == Success
+        } else {
+            result = whitelistStr.withCString { dotlottie_state_machine_start(smPtr, $0, openUrlPolicy.requireUserInteraction) == Success }
         }
-        return whitelistStr.withCString { dotlottie_state_machine_start(smPtr, $0, openUrlPolicy.requireUserInteraction) == Success }
+        if result { isStateMachineRunning = true }
+        return result
     }
 
     @discardableResult
     public func stateMachineStop() -> Bool {
+        isStateMachineRunning = false
         guard let smPtr = stateMachinePtr else { return false }
         return dotlottie_state_machine_stop(smPtr) == Success
     }
@@ -1150,22 +1159,21 @@ public class DotLottiePlayer {
     }
 
     private func pollEvents() {
-        guard let ptr = playerPtr else { return }
+        guard playerPtr != nil else { return }
 
-        var event = dotlottieDotLottiePlayerEvent()
-        while dotlottie_poll_event(ptr, &event) == 1 {
-            handlePlayerEvent(event)
-        }
-
-        if let smPtr = stateMachinePtr {
+        if isStateMachineRunning, let smPtr = stateMachinePtr {
             var smEvent = dotlottieStateMachineEvent()
             while dotlottie_state_machine_poll_event(smPtr, &smEvent) == 1 {
                 handleStateMachineEvent(smEvent)
             }
-
             var internalEvent = dotlottieStateMachineInternalEvent()
             while dotlottie_state_machine_poll_internal_event(smPtr, &internalEvent) == 1 {
                 handleStateMachineInternalEvent(internalEvent)
+            }
+        } else if let ptr = playerPtr {
+            var event = dotlottieDotLottiePlayerEvent()
+            while dotlottie_poll_event(ptr, &event) == 1 {
+                handlePlayerEvent(event)
             }
         }
     }

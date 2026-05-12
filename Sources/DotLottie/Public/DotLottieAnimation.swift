@@ -548,6 +548,10 @@ public final class DotLottieAnimation: ObservableObject {
         return player.config().useFrameInterpolation
     }
     
+    public func isStateMachineRunning() -> Bool {
+        player.isStateMachineRunning()
+    }
+
     @discardableResult
     public func stateMachineLoad(id: String) -> Bool {
         config.stateMachineId = id
@@ -563,13 +567,9 @@ public final class DotLottieAnimation: ObservableObject {
     }
     
     public func stateMachineStop() -> Bool {
-        let stop = player.stateMachineStop()
-        
-        let _ = player.stateMachineInternalSubscribe(observer: self.internalStateMachineObserver)
-        
-        return stop
+        return player.stateMachineStop()
     }
-    
+
     public func stateMachineStart(openUrlPolicy: OpenUrlPolicy = OpenUrlPolicy()) -> Bool {
         let sm = player.stateMachineStart(openUrlPolicy: openUrlPolicy)
 

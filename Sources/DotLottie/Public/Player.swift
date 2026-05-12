@@ -254,6 +254,10 @@ class Player: ObservableObject {
         hasResized = true
     }
     
+    public func isStateMachineRunning() -> Bool {
+        dotLottiePlayer.isStateMachineRunning
+    }
+
     public func stateMachineLoad(id: String) -> Bool {
         dotLottiePlayer.stateMachineLoad(stateMachineId: id)
     }
