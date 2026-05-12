@@ -9,6 +9,7 @@
 import Foundation
 import MetalKit
 import AVFoundation
+import QuartzCore
 
 #if os(macOS)
 // Custom MTKView that handles mouse events
@@ -90,7 +91,8 @@ public class Coordinator: NSObject, MTKViewDelegate {
     private var metalDevice: MTLDevice!
     private var metalCommandQueue: MTLCommandQueue!
     private var mtlTexture: MTLTexture!
-    private var viewSize: CGSize!    
+    private var viewSize: CGSize!
+    private var lastDrawTime: CFTimeInterval = 0    
     
 #if os(macOS)
     weak var mtkView: MTKView?
@@ -188,8 +190,12 @@ public class Coordinator: NSObject, MTKViewDelegate {
         guard !parent.dotLottieViewModel.error() else {
             return
         }
-        
-        if let frame = parent.dotLottieViewModel.tick() {
+
+        let now = CACurrentMediaTime()
+        let dt = lastDrawTime == 0 ? Float(0) : Float((now - lastDrawTime) * 1000)
+        lastDrawTime = now
+
+        if let frame = parent.dotLottieViewModel.tick(dt: dt) {
             let commandBuffer = metalCommandQueue.makeCommandBuffer()
             
             let inputImage = CIImage(cgImage: frame)

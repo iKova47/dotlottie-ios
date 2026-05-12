@@ -213,19 +213,15 @@ public final class DotLottieAnimation: ObservableObject {
     }
     
     // MARK: Tick
-    
-    /// Requests a frame and renders it if necessary
-    public func tick() -> CGImage? {
-        if let image = player.tick() {
-            return image
-        }
-        
-        return nil
+
+    /// Advances the animation by `dt` seconds and renders if the frame changed.
+    public func tick(dt: Float) -> CGImage? {
+        player.tick(dt: dt)
     }
-    
-    /// Generates frame image
+
+    /// Renders the current frame without advancing time.
     public func frameImage() -> CGImage? {
-        player.tick()
+        player.tick(dt: 0)
     }
     
     // MARK: Loaders
@@ -257,9 +253,7 @@ public final class DotLottieAnimation: ObservableObject {
             try player.loadDotlottieData(data: data, width: self.animationModel.width, height: self.animationModel.height)
             
             if config.stateMachineId != "" {
-                let _ = player.stateMachineInternalSubscribe(observer: self.internalStateMachineObserver)
-                
-                self.stateMachineListeners = stateMachineFrameworkSetup().map { $0.lowercased() }
+                _ = stateMachineStart(id: config.stateMachineId)
             }
         } catch let error {
             animationModel.error = true
@@ -485,10 +479,6 @@ public final class DotLottieAnimation: ObservableObject {
         return (player.config().segment[0], player.config().segment[1])
     }
     
-    public func getLayerBounds(layerName: String) -> [Float] {
-        player.getLayerBounds(layerName: layerName)
-    }
-    
     /// Set the current frame.
     /// Can return false if the frame is invalid or equal to the current frame.
     @discardableResult
@@ -556,6 +546,10 @@ public final class DotLottieAnimation: ObservableObject {
         return player.config().useFrameInterpolation
     }
     
+    public func isStateMachineRunning() -> Bool {
+        player.isStateMachineRunning()
+    }
+
     @discardableResult
     public func stateMachineLoad(id: String) -> Bool {
         config.stateMachineId = id
@@ -571,13 +565,9 @@ public final class DotLottieAnimation: ObservableObject {
     }
     
     public func stateMachineStop() -> Bool {
-        let stop = player.stateMachineStop()
-        
-        let _ = player.stateMachineInternalSubscribe(observer: self.internalStateMachineObserver)
-        
-        return stop
+        return player.stateMachineStop()
     }
-    
+
     public func stateMachineStart(openUrlPolicy: OpenUrlPolicy = OpenUrlPolicy()) -> Bool {
         let sm = player.stateMachineStart(openUrlPolicy: openUrlPolicy)
 

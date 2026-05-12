@@ -345,15 +345,17 @@ private struct DotLottiePlayerViewRepresentable: PlatformViewRepresentable {
             }
         }
         
-        // Apply playback mode
-        switch playbackMode {
-        case .playing:
-            if !view.isAnimationPlaying {
-                view.play()
-            }
-        case .paused:
-            if view.isAnimationPlaying {
-                view.pause()
+        // Apply playback mode (skip when state machine is managing playback)
+        if !animation.isStateMachineRunning() {
+            switch playbackMode {
+            case .playing:
+                if !view.isAnimationPlaying {
+                    view.play()
+                }
+            case .paused:
+                if view.isAnimationPlaying {
+                    view.pause()
+                }
             }
         }
         

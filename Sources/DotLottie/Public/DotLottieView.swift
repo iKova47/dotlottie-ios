@@ -112,6 +112,7 @@ public struct DotLottieView: View, DotLottie {
     @State private var currentImage: CGImage?
     @State private var viewSize: CGSize = .zero
     @State private var isDragging: Bool = false
+    @State private var lastTickTime: CFTimeInterval = 0
     @Environment(\.displayScale) private var displayScale: CGFloat
     
     public init(dotLottie: DotLottieAnimation) {
@@ -182,6 +183,13 @@ public struct DotLottieView: View, DotLottie {
         )
     }
 
+    private func tickFrame() -> CGImage? {
+        let now = ProcessInfo.processInfo.systemUptime
+        let dt = lastTickTime == 0 ? Float(0) : Float((now - lastTickTime) * 1000)
+        lastTickTime = now
+        return dotLottieViewModel.tick(dt: dt)
+    }
+
     private struct StateMachineGestureModifier<G: Gesture>: ViewModifier {
         let gesture: G
         let isActive: Bool
@@ -203,7 +211,7 @@ public struct DotLottieView: View, DotLottie {
                 GeometryReader { geometry in
                     frameContent(geometry: geometry)
                         .onChange(of: timeline.date) { _ in
-                            if let frame = dotLottieViewModel.tick() {
+                            if let frame = tickFrame() {
                                 currentImage = frame
                             }
                         }
@@ -223,7 +231,7 @@ public struct DotLottieView: View, DotLottie {
             .onReceive(
                 Timer.publish(every: 1.0 / Double(max(1, dotLottieViewModel.framerate)), on: .main, in: .common).autoconnect()
             ) { _ in
-                if let frame = dotLottieViewModel.tick() {
+                if let frame = tickFrame() {
                     currentImage = frame
                 }
             }
@@ -245,7 +253,7 @@ public struct DotLottieView: View, DotLottie {
         }
         .onAppear {
             updateViewSize(geometry.size)
-            if let frame = dotLottieViewModel.tick() {
+            if let frame = tickFrame() {
                 currentImage = frame
             }
         }
