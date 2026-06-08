@@ -350,6 +350,53 @@ public final class DotLottieAnimation: ObservableObject {
         }
     }
     
+    /// Reloads the player with new JSON animation data **in place** — without
+    /// creating a new `DotLottieAnimation` or tearing down its view.
+    ///
+    /// The bound `DotLottieView` keeps rendering the same `player`, which now
+    /// holds the new content, so callers get a seamless swap with no flash and
+    /// no `.id()`-driven view rebuild. Playback state (playing/paused + current
+    /// frame, clamped to the new duration) is preserved across the reload.
+    ///
+    /// - Parameter animationData: The new animation JSON (.json) string.
+    /// - Returns: `true` on success, `false` if the data failed to load.
+    /// - Important: Call on the main thread.
+    @discardableResult
+    public func reload(animationData: String) -> Bool {
+        let wasPlaying = player.isPlaying()
+        let previousFrame = player.currentFrame()
+
+        // IMPORTANT: keep the CURRENT render size (`animationModel.width/height`),
+        // which reflects the on-screen drawable size set by the last `resize(...)`.
+        // Do NOT re-derive the animation's *intrinsic* size here: because an
+        // in-place reload doesn't rebuild the view, no resize event fires to
+        // correct it, so the player would render at the (small) intrinsic size and
+        // the result would look pixelated/upscaled.
+        do {
+            try loadAnimation(animationData: animationData)
+        } catch {
+            return false
+        }
+
+        // Restore the prior playback position/state so the swap is seamless.
+        let total = player.totalFrames()
+        if total > 0 {
+            _ = player.setFrame(no: min(previousFrame, total - 1))
+        }
+        if wasPlaying { _ = player.play() } else { _ = player.pause() }
+
+        return true
+    }
+
+    /// Convenience overload for callers holding the animation as bytes.
+    /// - Returns: `true` on success, `false` if the bytes are not valid UTF-8
+    ///   or failed to load.
+    @discardableResult
+    public func reload(lottieData: Data) -> Bool {
+        guard let json = String(data: lottieData, encoding: .utf8) else { return false }
+        return reload(animationData: json)
+    }
+
     /// Loads animation with the id passed as argument.
     /// - Parameter animationId: The id of the animation to play.
     public func loadAnimationById(_ animationId: String) throws {
